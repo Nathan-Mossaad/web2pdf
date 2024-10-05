@@ -3,6 +3,7 @@ name = "web2pdf"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+description = "A CLI tool to convert web pages to PDFs"
 readme = "README.md"
 keywords = ["chrome", "automation", "pdf"]
 categories = ["command-line-utilities"]
@@ -13,7 +14,6 @@ repository = "https://github.com/Nathan-Mossaad/web2pdf"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-web2pdf_lib = { path = "web2pdf_lib" }
 tokio = { version = "1.38", features = ["macros", "rt-multi-thread"] }
 futures = "0.3"
 chromiumoxide = { version = "0.7", features = [
@@ -24,6 +24,8 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 clap = { version = "4.5", features = ["derive"] }
 indicatif = "0.17"
 tracing-indicatif = "0.3"
+
+web2pdf_lib = { path = "web2pdf_lib", version = "0.1.0" }
 
 [workspace]
 members = ["web2pdf_lib"]

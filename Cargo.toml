@@ -14,7 +14,7 @@ repository = "https://github.com/Nathan-Mossaad/web2pdf"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.38", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.42", features = ["macros", "rt-multi-thread"] }
 futures = "0.3"
 chromiumoxide = { version = "0.7", features = [
   "tokio-runtime",

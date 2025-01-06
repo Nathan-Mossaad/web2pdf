@@ -135,6 +135,9 @@ pub struct Cli {
     )]
     pub scale: Option<f64>,
 
+    #[clap(long, default_value_t = false, help = "Clear all browser cookies")]
+    pub clear_cookies: bool,
+
     #[clap(
         long,
         help = "Path to a cookie jar file (in Netscape format), to be loaded into the browser"
@@ -146,6 +149,17 @@ pub struct Cli {
 
     #[clap(long, help = "Force ANSI output")]
     pub ansi_only: bool,
+
+    #[clap(long, default_value_t = false, help = "Allow running extensions")]
+    pub allow_extensions: bool,
+
+    #[clap(
+        long,
+        default_value_t = false,
+        help = "Open the browser",
+        long_help = "Open the browser instead of creating a pdf (usefull when accepting cookeis etc.)"
+    )]
+    pub open_browser: bool,
 
     #[clap(required = true, num_args = 2.., value_names = &["URL", "PATH"], help = "URL-Path pairs to convert to PDFs")]
     pub raw_url_path_pairs: Option<Vec<String>>,
@@ -201,7 +215,10 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     for pair in cli.url_path_pairs.iter_mut() {
         let path = Path::new(&pair.url);
         if path.is_file() {
-            trace!("Path {} is a file, converting to file:// URL", path.display());
+            trace!(
+                "Path {} is a file, converting to file:// URL",
+                path.display()
+            );
             pair.url = format!("file://{}", path.display());
         }
     }
@@ -244,11 +261,52 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         if let Some(height) = &cli.paper_height {
             viewport.height = (*height * 96.0) as u32;
         }
+        if cli.open_browser {
+            viewport.width = 0;
+            viewport.height = 0;
+        }
         // Create browser config
         let mut browser_config = BrowserConfig::builder().viewport(Some(viewport));
+        if cli.allow_extensions {
+            // We need to override default args to allow extensions etc
+            browser_config = browser_config.disable_default_args().args([
+                "--disable-background-networking",
+                "--enable-features=NetworkService,NetworkServiceInProcess",
+                "--disable-background-timer-throttling",
+                "--disable-backgrounding-occluded-windows",
+                "--disable-breakpad",
+                "--disable-client-side-phishing-detection",
+                "--disable-component-extensions-with-background-pages",
+                "--disable-default-apps",
+                "--disable-dev-shm-usage",
+                // "--disable-extensions",
+                "--disable-features=TranslateUI",
+                "--disable-hang-monitor",
+                "--disable-ipc-flooding-protection",
+                "--disable-popup-blocking",
+                "--disable-prompt-on-repost",
+                "--disable-renderer-backgrounding",
+                "--disable-sync",
+                "--force-color-profile=srgb",
+                "--metrics-recording-only",
+                "--no-first-run",
+                "--enable-automation",
+                "--password-store=basic",
+                "--use-mock-keychain",
+                "--enable-blink-features=IdleDetection",
+                "--lang=en_US",
+            ]);
+        }
         if let Some(path) = &cli.browser_path {
             browser_config = browser_config.chrome_executable(path);
         }
+
+        // Open browser if requested
+        if cli.open_browser {
+            browser_config =
+                browser_config.headless_mode(chromiumoxide::browser::HeadlessMode::False);
+        }
+
         let browser_config = browser_config.build()?;
         debug!("browser_config: {:?}", browser_config);
 
@@ -262,10 +320,26 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    browser.clear_cookies().await?;
+    // Close browser if it was oened with a gui, as we cannot create PDF after
+    if cli.open_browser {
+        info!("Press ctrl+c to close browser");
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+
+        Arc::try_unwrap(browser)
+            .expect("Ganing ownership to close browser failed!")
+            .close_and_wait()
+            .await?;
+        debug!("Closed browser");
+        std::process::exit(0);
+    }
+
     // Load cookies
     match &cli.cookie_jar {
         Some(cookie_file) => {
+            if cli.clear_cookies {
+                browser.clear_cookies().await?;
+            }
             debug!("Loading cookies from {:?}", cookie_file);
             match browser.web2pdf_load_cookie_file(cookie_file).await {
                 Ok(_) => {}

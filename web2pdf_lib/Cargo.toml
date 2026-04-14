@@ -1,6 +1,6 @@
 [package]
 name = "web2pdf_lib"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A wrapper around chromiumoxide that allows for a more streamlined experience when creating PDFs"
@@ -11,9 +11,7 @@ homepage = "https://github.com/Nathan-Mossaad/web2pdf"
 repository = "https://github.com/Nathan-Mossaad/web2pdf"
 
 [dependencies]
-tokio = { version = "1.38", features = ["rt-multi-thread"] }
+tokio = { version = "1.51", features = ["rt-multi-thread"] }
 futures = "0.3"
-chromiumoxide = { version = "0.7", features = [
-    "tokio-runtime",
-], default-features = false }
+chromiumoxide = { version = "0.9", default-features = false }
 tracing = "0.1"

@@ -157,7 +157,7 @@ pub struct Cli {
         long,
         default_value_t = false,
         help = "Open the browser",
-        long_help = "Open the browser instead of creating a pdf (usefull when accepting cookeis etc.)"
+        long_help = "Open the browser instead of creating a pdf (usefull when accepting cookies etc.)"
     )]
     pub open_browser: bool,
 
@@ -303,8 +303,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
         // Open browser if requested
         if cli.open_browser {
-            browser_config =
-                browser_config.headless_mode(chromiumoxide::browser::HeadlessMode::False);
+            browser_config = browser_config.with_head();
         }
 
         let browser_config = browser_config.build()?;
